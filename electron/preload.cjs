@@ -1,0 +1,27 @@
+const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('haru', {
+  load: () => ipcRenderer.invoke('data:load'),
+  save: state => ipcRenderer.invoke('data:save', state),
+  catalog: () => ipcRenderer.invoke('catalog:load'),
+  catalogSource: id => ipcRenderer.invoke('catalog:source', id),
+  dataInfo: () => ipcRenderer.invoke('data:info'),
+  openDataFolder: () => ipcRenderer.invoke('data:folder'),
+  exportTransfer: state => ipcRenderer.invoke('transfer:export', state),
+  backupHistory: () => ipcRenderer.invoke('history:list'),
+  readHistory: id => ipcRenderer.invoke('history:read', id),
+  checkpoint: () => ipcRenderer.invoke('history:checkpoint'),
+  settings: () => ipcRenderer.invoke('settings:read'),
+  saveSettings: payload => ipcRenderer.invoke('settings:save', payload),
+  youtube: url => ipcRenderer.invoke('lesson:youtube', url),
+  translate: segments => ipcRenderer.invoke('lesson:translate', segments),
+  lookupWord: word => ipcRenderer.invoke('dictionary:lookup', word),
+  openDictionary: word => ipcRenderer.invoke('dictionary:open', word),
+  openReference: (provider, text) => ipcRenderer.invoke('reference:open', provider, text),
+  searchYoutube: query => ipcRenderer.invoke('youtube:search', query),
+  exportWords: (format, words) => ipcRenderer.invoke('words:export', format, words),
+  onYoutubeSelected: callback => { const handler = (_event, url) => callback(url); ipcRenderer.on('youtube:selected', handler); return () => ipcRenderer.removeListener('youtube:selected', handler); },
+  openSubtitles: () => ipcRenderer.invoke('subtitle:open'),
+  exportBackup: state => ipcRenderer.invoke('backup:export', state),
+  importBackup: () => ipcRenderer.invoke('backup:import'),
+  openYoutube: (id, start = 0) => ipcRenderer.invoke('youtube:open', id, start)
+});

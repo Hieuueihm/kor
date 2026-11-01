@@ -1,0 +1,7 @@
+node_modules/
+dist/
+release/
+.env
+test-results/
+*.log
+.source-cache/

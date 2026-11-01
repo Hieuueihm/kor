@@ -1,0 +1,21 @@
+Haru Korean–Vietnamese vocabulary catalog
+
+Source: National Institute of Korean Language (국립국어원), Korean Basic Dictionary
+https://krdict.korean.go.kr/vie/mainAction
+Official full-dictionary JSON snapshot: 2026-10-19
+Download: https://krdict.korean.go.kr/dicBatchDownload?seq=220
+
+Text source and this adapted text catalog: Creative Commons Attribution–ShareAlike
+2.0 Korea (CC BY-SA 2.0 KR).
+License: https://creativecommons.org/licenses/by-sa/2.0/kr/
+Source policy: https://krdict.korean.go.kr/kor/kboardPolicy/copyRightTermsInfo
+
+Changes by Haru: selected beginner/intermediate headwords with Vietnamese meanings
+and real source examples; combined duplicate spellings; retained a subset of senses,
+examples, and collocations; translated part-of-speech and topic navigation labels
+into Vietnamese. Korean examples and usage notes are source text, not generated
+sentences. No source audio, images, or other multimedia are included.
+
+Keep this attribution and the same license when redistributing/adapting this data.
+The share-alike license applies to this vocabulary data, not to unrelated user notes
+or the application's independent code.

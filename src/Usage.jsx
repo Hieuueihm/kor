@@ -1,0 +1,21 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Bookmark, Search, Volume2 } from 'lucide-react';
+import { comparisons, usageTerm } from '../shared/usage.mjs';
+import { searchKey } from '../shared/topics.mjs';
+import { normalize } from '../shared/core.mjs';
+export default function Usage({ savedWords, onSaveWords, onSavePhrase, onListen }) {
+  const [catalog, setCatalog] = useState(null), [error, setError] = useState('');
+  const [tab, setTab] = useState('pairs'), [query, setQuery] = useState(''), [page, setPage] = useState(0);
+  useEffect(() => { window.haru.catalog().then(setCatalog).catch(error => setError(error.message)); }, []);
+  const entries = useMemo(() => catalog?.entries.filter(entry => entry.collocations?.length && searchKey(`${entry.word} ${entry.meaning} ${entry.collocations.join(' ')}`).includes(searchKey(query))) || [], [catalog, query]);
+  const saved = new Set(savedWords.map(word => normalize(word.word)));
+  if (error) return <p className="inline-error" role="alert">{error}</p>;
+  if (!catalog) return <p className="muted">Đang mở cụm từ ngoại tuyến…</p>;
+  return <section className="usage-page"><div className="tabs"><button className={tab === 'pairs' ? 'selected' : ''} onClick={() => { setTab('pairs'); setPage(0); }}>Phân biệt từ dễ nhầm</button><button className={tab === 'phrases' ? 'selected' : ''} onClick={() => { setTab('phrases'); setPage(0); }}>Cụm thường gặp</button></div><div className="topics-search"><Search size={18} /><input aria-label="Tìm cụm và từ dễ nhầm" value={query} onChange={event => { setQuery(event.target.value); setPage(0); }} placeholder="Tìm từ tiếng Hàn hoặc nghĩa tiếng Việt…" /></div>
+    {tab === 'pairs' ? <div className="comparison-list">{comparisons.filter(pair => searchKey(pair.title + ' ' + pair.note).includes(searchKey(query))).map(pair => <article className="panel comparison-card" key={pair.id}><h2>{pair.title}</h2><p className="comparison-note">{pair.note}</p><div className="comparison-terms">{pair.terms.map(term => {
+      const entry = usageTerm(catalog, term); if (!entry) return null;
+      return <section key={entry.word}><div className="section-title-row"><h3 lang="ko">{entry.word}</h3><button className="icon" aria-label={`Nghe từ phân biệt ${entry.word}`} onClick={() => onListen(entry.word)}><Volume2 size={17} /></button></div><strong>{entry.meaning}</strong><p>{entry.definition}</p><p className="usage-example" lang="ko">{entry.examples[0]?.text}</p><button className="text-button purple" onClick={() => window.haru.catalogSource(entry.sourceId || entry.id)}>Nguồn NIKL</button><button className="secondary" disabled={saved.has(normalize(entry.word))} onClick={() => onSaveWords({ title: 'Từ dễ nhầm' }, [entry])}><Bookmark size={15} />{saved.has(normalize(entry.word)) ? 'Đã lưu' : 'Lưu từ'}</button></section>;
+    })}</div></article>)}</div> : <><p className="field-help">{entries.length.toLocaleString('vi-VN')} từ có cụm đi kèm. Cụm và ví dụ gốc từ NIKL; khi lưu cụm, bạn điền nghĩa của cả cụm theo ngữ cảnh.</p><div className="phrase-list">{entries.slice(page * 20, (page + 1) * 20).map(entry => <article className="panel phrase-card" key={entry.id}><h3 lang="ko">{entry.word} <small>{entry.meaning}</small></h3><div className="phrase-chips">{entry.collocations.map(phrase => <div key={phrase}><button className="text-button" lang="ko" onClick={() => onListen(phrase)}><Volume2 size={15} />{phrase}</button><button className="text-button purple" aria-label={`Lưu cụm ${phrase}`} onClick={() => onSavePhrase(phrase, entry)}><Bookmark size={14} />Lưu cụm</button></div>)}</div><p className="usage-example" lang="ko">{entry.examples[0]?.text}</p><button className="text-button" onClick={() => window.haru.catalogSource(entry.id)}>Nguồn NIKL</button></article>)}</div><div className="catalog-pagination"><span>Trang {page + 1} / {Math.max(1, Math.ceil(entries.length / 20))}</span><button className="secondary" disabled={page === 0} onClick={() => setPage(value => value - 1)}>Trang trước</button><button className="secondary" disabled={(page + 1) * 20 >= entries.length} onClick={() => setPage(value => value + 1)}>Trang tiếp</button></div></>}
+    <p className="topic-footnote">Định nghĩa, cụm và ví dụ: NIKL · CC BY-SA 2.0 KR. Phần so sánh tiếng Việt do Haru biên soạn; xem ví dụ để chọn nghĩa đúng ngữ cảnh.</p>
+  </section>;
+}

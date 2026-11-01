@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import JSZip from 'jszip';
+import ExcelJS from 'exceljs';
+import exporters from '../electron/export.cjs';
+const words = [{ id: '1', word: '학교', meaning: 'trường học', context: '학교에 가요.', contextTranslation: 'Tôi đến trường.', note: '=2+2 <script>alert(1)</script>', lessonTitle: 'Bài học', due: 1800000000000, level: 3 }];
+test('Word export contains Korean and Vietnamese as editable document text', async () => {
+  const folder = await mkdtemp(path.join(tmpdir(), 'haru-word-'));
+  const file = path.join(folder, 'words.docx');
+  await exporters.exportDocx(file, words);
+  const zip = await JSZip.loadAsync(await readFile(file));
+  const document = await zip.file('word/document.xml').async('string');
+  assert.ok(document.includes('학교'));
+  assert.ok(document.includes('trường học'));
+  assert.ok(document.includes('Tôi đến trường.'));
+  assert.ok(document.includes('&lt;script&gt;'));
+});
+test('Excel export preserves text, real dates, filter, and freeze; no formula injection', async () => {
+  const folder = await mkdtemp(path.join(tmpdir(), 'haru-excel-'));
+  const file = path.join(folder, 'words.xlsx');
+  await exporters.exportXlsx(file, words);
+  const workbook = new ExcelJS.Workbook(); await workbook.xlsx.readFile(file);
+  const sheet = workbook.getWorksheet('Từ vựng');
+  assert.equal(sheet.getCell('A2').value, '학교');
+  assert.equal(sheet.getCell('B2').value, 'trường học');
+  assert.equal(sheet.getCell('E2').value, words[0].note);
+  assert.ok(sheet.getCell('H2').value instanceof Date);
+  assert.equal(sheet.views[0].ySplit, 1);
+  assert.equal(sheet.autoFilter, 'A1:H1');
+});
+test('PDF HTML escapes user text and repeats table headers for long lists', () => {
+  const html = exporters.pdfHTML(words);
+  assert.ok(html.includes('학교'));
+  assert.ok(html.includes('trường học'));
+  assert.equal(html.includes('<script>'), false);
+  assert.ok(html.includes('table-header-group'));
+});

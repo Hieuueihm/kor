@@ -1,0 +1,30 @@
+import { _electron as electron, expect } from '@playwright/test';
+import executablePath from 'electron';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+const env = { ...process.env, HARU_TEST_DATA: await mkdtemp(path.join(tmpdir(), 'haru-naver-')) }; delete env.ELECTRON_RUN_AS_NODE;
+const app = await electron.launch({ executablePath: process.env.HARU_EXECUTABLE || executablePath, args: process.env.HARU_EXECUTABLE ? [] : ['.'], env });
+try {
+  const page = await app.firstWindow();
+  await page.locator('nav').getByRole('button', { name: 'Tra từ', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Từ cần tra', exact: true }).fill('학교');
+  let next = app.waitForEvent('window');
+  await page.getByRole('button', { name: 'Tra Naver Hàn–Việt', exact: true }).click();
+  const naver = await next;
+  await naver.waitForURL(/korean\.dict\.naver\.com/, { timeout: 20000 });
+  await expect(naver.locator('body')).toContainText('학교', { timeout: 25000 });
+  expect(await naver.evaluate(() => typeof window.haru)).toBe('undefined');
+  await naver.screenshot({ path: 'test-results/naver-dictionary.png' });
+  await naver.close();
+  next = app.waitForEvent('window');
+  await page.getByRole('button', { name: 'Dịch trên Papago', exact: true }).click();
+  const papago = await next;
+  await papago.waitForURL(/papago\.naver\.com/, { timeout: 20000 });
+  await expect(papago.locator('body')).toContainText('학교', { timeout: 25000 });
+  await expect(papago.locator('body')).toContainText(/trường/i, { timeout: 25000 });
+  expect(await papago.evaluate(() => typeof window.haru)).toBe('undefined');
+  await papago.screenshot({ path: 'test-results/papago-translation.png' });
+  await papago.close();
+  console.log('PASS: Naver Korean–Vietnamese search and Papago Korean→Vietnamese prefill/translation; remote pages have no Haru bridge.');
+} finally { await app.close(); }
